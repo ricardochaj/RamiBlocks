@@ -119,6 +119,8 @@
   /* ---------- Game screen ---------- */
   #gameScreen{ display:none; flex-direction:column; width:100%; height:100%; align-items:center; padding: 2vmin 2vmin calc(env(safe-area-inset-bottom) + 1vmin); }
   #gameScreen.active{ display:flex; }
+  #candyScreen{ display:none; flex-direction:column; width:100%; height:100%; align-items:center; padding: 2vmin 2vmin calc(env(safe-area-inset-bottom) + 1vmin); }
+  #candyScreen.active{ display:flex; }
 
   .topbar{ width:100%; max-width: 46rem; display:flex; align-items:center; justify-content:space-between; margin-bottom: 1vmin; flex: 0 0 auto; }
 
@@ -156,12 +158,12 @@
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
     transition: background .08s, box-shadow .08s;
   }
-  .cell.filled, .piece-cell{
+  .cell.filled, .piece-cell, .candy-cell.filled{
     clip-path: polygon(24% 0%, 76% 0%, 100% 24%, 100% 76%, 76% 100%, 24% 100%, 0% 76%, 0% 24%);
     position: relative;
     overflow: hidden;
   }
-  .cell.filled::before, .piece-cell::before{
+  .cell.filled::before, .piece-cell::before, .candy-cell.filled::before{
     content:""; position:absolute; inset:0;
     background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,.85) 42%, rgba(255,255,255,.2) 52%, transparent 70%);
     background-size: 250% 250%;
@@ -175,7 +177,7 @@
     45%{ background-position: 160% 160%; }
     100%{ background-position: 160% 160%; }
   }
-  .cell.filled::after, .piece-cell::after{
+  .cell.filled::after, .piece-cell::after, .candy-cell.filled::after{
     content:""; position:absolute; top:12%; left:16%; width:22%; height:22%; border-radius:50%;
     background: radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 70%);
     animation: sparkleTwinkle 2.4s ease-in-out infinite;
@@ -240,6 +242,16 @@
   .small-btn{ border:none; border-radius:.7rem; padding:.5rem .9rem; background: var(--panel-edge); color:var(--ink); font-weight:700; cursor:pointer; font-size:.85rem; }
   .small-btn.danger{ background: var(--danger); color:#3a0710; }
   .small-btn:active{ transform: scale(.95); }
+  .modal-card{ max-height: 88vh; overflow-y: auto; }
+  .field-group{ text-align:left; margin: .8rem 0; }
+  .field-group label{ display:block; font-size:.8rem; color:var(--ink-dim); margin-bottom:.3rem; font-weight:700; }
+  .field-group input[type="text"], .field-group input[type="number"]{
+    width:100%; box-sizing:border-box; background: var(--panel-edge); border:none; border-radius:.7rem;
+    padding:.6rem .8rem; color:var(--ink); font-size:.95rem; font-family:inherit;
+  }
+  .checkbox-row{ display:flex; align-items:center; gap:.6rem; margin:.7rem 0; text-align:left; }
+  .checkbox-row input{ width:1.15rem; height:1.15rem; accent-color: var(--candy-green); }
+  .checkbox-row label{ font-size:.9rem; font-weight:600; }
 
   .combo-toast{
     position:absolute; top: 14vmin; left:50%; transform: translateX(-50%) translateY(-10px) scale(.7); opacity:0;
@@ -254,6 +266,23 @@
     font-size: .65rem; color: rgba(184,173,222,.45); letter-spacing:.02em;
     pointer-events: none; z-index: 5; font-weight:600;
   }
+
+  #candyBoard{
+    position:relative; display:grid; background: var(--panel); border-radius: 1rem;
+    box-shadow: inset 0 0 0 3px var(--panel-edge), 0 10px 0 rgba(0,0,0,.25);
+    padding: .6vmin; gap: .45vmin; aspect-ratio: 1/1; touch-action:none;
+    max-width: 46rem; max-height: 46rem;
+  }
+  .candy-cell{
+    border-radius: .4rem; background: rgba(255,255,255,.04);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+    cursor:pointer; transition: transform .15s ease;
+  }
+  .candy-cell.selected{
+    box-shadow: 0 0 0 3px #fff, inset 0 0 0 2px rgba(255,255,255,.7);
+    transform: scale(1.08); z-index:2;
+  }
+  .candy-cell.matched{ animation: pop .3s ease forwards; }
 </style>
 </head>
 <body>
@@ -305,6 +334,23 @@
     <button class="big-btn" id="startPlayingBtn">Empezar a jugar</button>
   </div>
 
+  <!-- ===================== LEARNING GATE LOCK SCREEN ===================== -->
+  <div id="gateScreen" class="screen hidden">
+    <h1 class="brand" style="font-size:clamp(1.6rem,7vmin,2.4rem)">¡Primero un ratito de lectura! 📖</h1>
+    <p class="subtitle" id="gateSubtitle">Necesitás usar Leo y Juego un poco más antes de jugar a los bloques.</p>
+    <div id="gateProgressWrap" style="width:min(90vw,24rem); margin-bottom:1.6rem;">
+      <div style="background:var(--panel); border-radius:1rem; overflow:hidden; height:1.6rem; box-shadow: inset 0 0 0 2px var(--panel-edge);">
+        <div id="gateProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--candy-green), var(--candy-teal)); transition: width .4s ease;"></div>
+      </div>
+      <div id="gateProgressText" style="margin-top:.5rem; color:var(--ink-dim); font-size:.9rem;">0 de 15 minutos</div>
+    </div>
+    <div id="gatePermissionBox" class="hidden" style="max-width:26rem; margin-bottom:1rem;">
+      <p class="subtitle" style="margin-bottom:1rem;">Para que esto funcione, un adulto tiene que activar un permiso de Android una sola vez.</p>
+      <button class="big-btn" id="gateOpenSettingsBtn">Activar permiso</button>
+    </div>
+    <button class="ghost-btn" id="gateRefreshBtn">Ya jugué a Leo y Juego, revisar de nuevo</button>
+  </div>
+
   <!-- ===================== GAME SCREEN ===================== -->
   <div id="gameScreen">
     <div class="topbar">
@@ -318,6 +364,7 @@
         <div class="value" id="highScoreValue">0</div>
       </div>
       <div class="topbar-icons">
+        <button class="icon-btn" id="candySwitchBtn" title="Caramelos">🍬</button>
         <button class="icon-btn" id="exitBtn" title="Salir">🚪</button>
         <button class="icon-btn" id="settingsBtn">⚙️</button>
       </div>
@@ -325,6 +372,26 @@
     <div class="board-wrap"><div id="board"></div></div>
     <div id="tray"></div>
     <div class="combo-toast" id="comboToast">¡Combo!</div>
+  </div>
+
+  <!-- ===================== CANDY MATCH SCREEN ===================== -->
+  <div id="candyScreen">
+    <div class="topbar">
+      <div class="score-box">
+        <div class="label">Puntos</div>
+        <div class="value" id="candyScoreValue">0</div>
+      </div>
+      <div class="score-box">
+        <div class="label">Mejor puntaje</div>
+        <div class="value" id="candyHighScoreValue">0</div>
+      </div>
+      <div class="topbar-icons">
+        <button class="icon-btn" id="blocksSwitchBtn" title="Bloques">🧩</button>
+        <button class="icon-btn" id="candyExitBtn" title="Salir">🚪</button>
+      </div>
+    </div>
+    <div class="board-wrap"><div id="candyBoard"></div></div>
+    <div class="combo-toast" id="candyComboToast">¡Combo!</div>
   </div>
 
   <!-- ===================== PARENT PIN GATE MODAL ===================== -->
@@ -365,7 +432,38 @@
         <span class="label">Reiniciar mejor puntaje</span>
         <button class="small-btn danger" id="resetScoreBtn">Reiniciar</button>
       </div>
+      <div class="settings-row">
+        <span class="label">Requisito de lectura</span>
+        <button class="small-btn" id="openGateSettingsBtn">Configurar</button>
+      </div>
       <button class="big-btn" id="closeSettingsBtn" style="width:100%;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ===================== LEARNING GATE SETTINGS MODAL ===================== -->
+  <div class="modal-backdrop hidden" id="gateSettingsModal">
+    <div class="modal-card">
+      <h2>Requisito de lectura</h2>
+      <p>Pedile al nene que use Leo y Juego un rato antes de habilitar los bloques.</p>
+      <div class="checkbox-row">
+        <input type="checkbox" id="gateEnabledInput">
+        <label for="gateEnabledInput">Activar este requisito</label>
+      </div>
+      <div class="field-group">
+        <label for="gatePackageInput">Application ID de Leo y Juego</label>
+        <input type="text" id="gatePackageInput" placeholder="com.leoyjuego.app">
+      </div>
+      <div class="field-group">
+        <label for="gateMinutesInput">Minutos requeridos por día</label>
+        <input type="number" id="gateMinutesInput" min="1" max="180" value="15">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="gateResetDailyInput" checked>
+        <label for="gateResetDailyInput">Reiniciar el contador todos los días</label>
+      </div>
+      <p id="gateSettingsMsg" style="color:var(--candy-green); font-weight:700; min-height:1.2rem; font-size:.85rem;"></p>
+      <button class="big-btn" id="gateSettingsSaveBtn" style="width:100%;">Guardar</button>
+      <button class="ghost-btn" id="gateSettingsCloseBtn">Cerrar</button>
     </div>
   </div>
 
@@ -401,7 +499,7 @@
   ============================================================ */
   const STORAGE_KEY = "bloqueFiestaSettings";
   const HS_KEY = "bloqueFiestaHighScore";
-  const BUNDLED_VERSION = "1.0.6"; // matches version.json — bump this together with it
+  const BUNDLED_VERSION = "1.0.8"; // matches version.json — bump this together with it
 
   function nativePrefs(){
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -522,10 +620,10 @@
   }
 
   const AGE_CONFIG = {
-    "3-5":  { grid: 6, shapeSet: SET_EASY,     assist: true,  label: "3 a 5 años", cellGap: true },
-    "6-8":  { grid: 7, shapeSet: SET_MEDIUM,   assist: true,  label: "6 a 8 años" },
-    "9-12": { grid: 8, shapeSet: SET_MED_HARD, assist: false, label: "9 a 12 años" },
-    "13+":  { grid: 8, shapeSet: SET_HARD,     assist: false, label: "13 años o más" }
+    "3-5":  { grid: 6, shapeSet: SET_EASY,     assist: true,  label: "3 a 5 años", cellGap: true, candyGrid: 6, candyColors: 4 },
+    "6-8":  { grid: 7, shapeSet: SET_MEDIUM,   assist: true,  label: "6 a 8 años", candyGrid: 7, candyColors: 5 },
+    "9-12": { grid: 8, shapeSet: SET_MED_HARD, assist: false, label: "9 a 12 años", candyGrid: 7, candyColors: 6 },
+    "13+":  { grid: 8, shapeSet: SET_HARD,     assist: false, label: "13 años o más", candyGrid: 8, candyColors: 6 }
   };
 
   /* ============================================================
@@ -633,7 +731,7 @@
   });
 
   function goToScreen(id){
-    ["setupAge","setupPin","setupReady"].forEach(s=> el(s).classList.add("hidden"));
+    ["setupAge","setupPin","setupReady","gateScreen"].forEach(s=> el(s).classList.add("hidden"));
     el(id).classList.remove("hidden");
   }
 
@@ -735,12 +833,124 @@
     goToScreen("setupAge");
   });
 
+  /* ---------------- Learning gate (Leo y Juego) settings ---------------- */
+  const GATE_KEYS = {
+    enabled: "rb_gate_enabled",
+    package: "rb_gate_package",
+    minutes: "rb_gate_minutes",
+    resetDaily: "rb_gate_reset_daily"
+  };
+
+  async function loadGateSettings(){
+    const [enabled, pkg, minutes, resetDaily] = await Promise.all([
+      storageGet(GATE_KEYS.enabled),
+      storageGet(GATE_KEYS.package),
+      storageGet(GATE_KEYS.minutes),
+      storageGet(GATE_KEYS.resetDaily)
+    ]);
+    return {
+      enabled: enabled === "true",
+      packageName: pkg || "",
+      minutes: parseFloat(minutes || "15"),
+      resetDaily: resetDaily !== "false" // default true
+    };
+  }
+
+  el("openGateSettingsBtn").addEventListener("click", async ()=>{
+    Sound.click();
+    const cfg = await loadGateSettings();
+    el("gateEnabledInput").checked = cfg.enabled;
+    el("gatePackageInput").value = cfg.packageName;
+    el("gateMinutesInput").value = cfg.minutes;
+    el("gateResetDailyInput").checked = cfg.resetDaily;
+    el("gateSettingsMsg").textContent = "";
+    el("settingsModal").classList.add("hidden");
+    el("gateSettingsModal").classList.remove("hidden");
+  });
+  el("gateSettingsCloseBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("gateSettingsModal").classList.add("hidden");
+  });
+  el("gateSettingsSaveBtn").addEventListener("click", ()=>{
+    Sound.click();
+    const enabled = el("gateEnabledInput").checked;
+    const pkg = el("gatePackageInput").value.trim();
+    const minutes = Math.max(1, parseInt(el("gateMinutesInput").value, 10) || 15);
+    const resetDaily = el("gateResetDailyInput").checked;
+    storageSet(GATE_KEYS.enabled, String(enabled));
+    storageSet(GATE_KEYS.package, pkg);
+    storageSet(GATE_KEYS.minutes, String(minutes));
+    storageSet(GATE_KEYS.resetDaily, String(resetDaily));
+    el("gateSettingsMsg").textContent = "¡Guardado!";
+    setTimeout(()=>{ el("gateSettingsModal").classList.add("hidden"); }, 700);
+  });
+
+  // Checks whether the child has met today's (or cumulative) Leo y Juego usage
+  // requirement. Designed to FAIL OPEN: if the plugin, permission, or config
+  // is missing/broken, it never locks the child out — it just skips the gate.
+  async function checkLearningGate(){
+    const cfg = await loadGateSettings();
+    if(!cfg.enabled || !cfg.packageName) return { locked:false };
+
+    const plugins = (window.Capacitor && window.Capacitor.Plugins) || null;
+    if(!plugins || !plugins.UsageStats){ return { locked:false }; }
+
+    try{
+      const res = await plugins.UsageStats.getTodayMinutes({
+        packageName: cfg.packageName,
+        resetDaily: cfg.resetDaily
+      });
+      if(!res || res.granted === false){
+        return { locked:true, needsPermission:true, minutesRequired: cfg.minutes, minutesDone:0 };
+      }
+      const done = res.minutes || 0;
+      if(done >= cfg.minutes) return { locked:false };
+      return { locked:true, needsPermission:false, minutesRequired: cfg.minutes, minutesDone: done };
+    }catch(e){
+      return { locked:false };
+    }
+  }
+
+  function showLearningGateScreen(gate){
+    goToScreen("gateScreen");
+    el("gameScreen").classList.remove("active");
+    const pct = gate.needsPermission ? 0 : Math.min(100, Math.round((gate.minutesDone / gate.minutesRequired) * 100));
+    el("gateProgressBar").style.width = pct + "%";
+    el("gateProgressText").textContent = gate.needsPermission
+      ? "Falta activar un permiso"
+      : Math.floor(gate.minutesDone) + " de " + gate.minutesRequired + " minutos";
+    el("gatePermissionBox").classList.toggle("hidden", !gate.needsPermission);
+  }
+
+  el("gateRefreshBtn").addEventListener("click", async ()=>{
+    Sound.click();
+    const gate = await checkLearningGate();
+    if(gate.locked){ showLearningGateScreen(gate); }
+    else { resumeAfterGate(); }
+  });
+  el("gateOpenSettingsBtn").addEventListener("click", ()=>{
+    Sound.click();
+    const plugins = (window.Capacitor && window.Capacitor.Plugins) || null;
+    if(plugins && plugins.UsageStats && plugins.UsageStats.openSettings){
+      plugins.UsageStats.openSettings();
+    }
+  });
+
+  function resumeAfterGate(){
+    if(settings && settings.ageGroup && settings.pin){
+      beginGameScreen();
+    } else {
+      goToScreen("setupAge");
+    }
+  }
+
   /* ============================================================
      GAME LOGIC
   ============================================================ */
   function beginGameScreen(){
     el("gameScreen").classList.add("active");
-    ["setupAge","setupPin","setupReady"].forEach(s=> el(s).classList.add("hidden"));
+    el("candyScreen").classList.remove("active");
+    ["setupAge","setupPin","setupReady","gateScreen"].forEach(s=> el(s).classList.add("hidden"));
     newGame();
   }
 
@@ -1196,9 +1406,276 @@
   });
 
   /* ============================================================
+     CANDY MATCH MINI-GAME
+  ============================================================ */
+  const CANDY_HS_KEY = "bloqueFiestaCandyHighScore";
+  let cachedCandyHighScore = 0;
+  let candyGame = null;
+  let candyBusy = false;
+
+  function delay(ms){ return new Promise(resolve=> setTimeout(resolve, ms)); }
+  function randCandyType(numColors){ return Math.floor(Math.random()*numColors); }
+
+  function swapCandy(grid, r1,c1, r2,c2){
+    const tmp = grid[r1][c1]; grid[r1][c1] = grid[r2][c2]; grid[r2][c2] = tmp;
+  }
+
+  function findCandyMatches(grid){
+    const size = grid.length;
+    const matched = new Set();
+    for(let r=0;r<size;r++){
+      let start = 0;
+      for(let c=1;c<=size;c++){
+        if(c<size && grid[r][c]===grid[r][start]){ continue; }
+        if(c-start >= 3){ for(let k=start;k<c;k++) matched.add(r+"_"+k); }
+        start = c;
+      }
+    }
+    for(let c=0;c<size;c++){
+      let start = 0;
+      for(let r=1;r<=size;r++){
+        if(r<size && grid[r][c]===grid[start][c]){ continue; }
+        if(r-start >= 3){ for(let k=start;k<r;k++) matched.add(k+"_"+c); }
+        start = r;
+      }
+    }
+    return matched;
+  }
+
+  function candyHasValidMove(grid){
+    const size = grid.length;
+    for(let r=0;r<size;r++){
+      for(let c=0;c<size;c++){
+        if(c+1<size){
+          swapCandy(grid,r,c,r,c+1);
+          const has = findCandyMatches(grid).size > 0;
+          swapCandy(grid,r,c,r,c+1);
+          if(has) return true;
+        }
+        if(r+1<size){
+          swapCandy(grid,r,c,r+1,c);
+          const has = findCandyMatches(grid).size > 0;
+          swapCandy(grid,r,c,r+1,c);
+          if(has) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function buildCandyGridData(size, numColors){
+    let grid, attempts = 0;
+    do{
+      grid = Array.from({length:size}, ()=> Array.from({length:size}, ()=> randCandyType(numColors)));
+      attempts++;
+    } while(attempts < 30 && (findCandyMatches(grid).size > 0 || !candyHasValidMove(grid)));
+    return grid;
+  }
+
+  function applyCandyGravity(grid, numColors){
+    const size = grid.length;
+    for(let c=0;c<size;c++){
+      let pointer = size-1;
+      for(let r=size-1;r>=0;r--){
+        if(grid[r][c] !== null){
+          grid[pointer][c] = grid[r][c];
+          if(pointer !== r) grid[r][c] = null;
+          pointer--;
+        }
+      }
+      for(let r=pointer;r>=0;r--){ grid[r][c] = randCandyType(numColors); }
+    }
+  }
+
+  function sizeCandyBoard(){
+    const wrap = document.querySelector("#candyScreen .board-wrap");
+    const boardEl = el("candyBoard");
+    if(!wrap || !boardEl) return;
+    const size = Math.max(120, Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight)) - 4);
+    boardEl.style.width = size + "px";
+    boardEl.style.height = size + "px";
+  }
+
+  function buildCandyBoardDOM(){
+    const boardEl = el("candyBoard");
+    boardEl.innerHTML = "";
+    boardEl.style.gridTemplateColumns = `repeat(${candyGame.size}, 1fr)`;
+    boardEl.style.gridTemplateRows = `repeat(${candyGame.size}, 1fr)`;
+    for(let r=0;r<candyGame.size;r++){
+      for(let c=0;c<candyGame.size;c++){
+        const cellEl = document.createElement("div");
+        cellEl.className = "candy-cell";
+        cellEl.dataset.r = r; cellEl.dataset.c = c;
+        cellEl.addEventListener("click", onCandyCellTap);
+        boardEl.appendChild(cellEl);
+      }
+    }
+    sizeCandyBoard();
+  }
+
+  function renderCandyBoard(){
+    const boardEl = el("candyBoard");
+    for(let r=0;r<candyGame.size;r++){
+      for(let c=0;c<candyGame.size;c++){
+        const idx = r*candyGame.size+c;
+        const cellEl = boardEl.children[idx];
+        cellEl.classList.remove("matched");
+        const type = candyGame.grid[r][c];
+        cellEl.classList.add("filled");
+        cellEl.style.background = glossyGradient(CANDY_COLOR_LIST[type % CANDY_COLOR_LIST.length]);
+        cellEl.style.setProperty("--shine-delay", (-(Math.random()*3.4)).toFixed(2)+"s");
+        cellEl.classList.toggle("selected", !!(candyGame.selected && candyGame.selected.r===r && candyGame.selected.c===c));
+      }
+    }
+  }
+
+  const CANDY_COLOR_LIST = PALETTE;
+
+  function showCandyCombo(combo){
+    const toast = el("candyComboToast");
+    toast.textContent = combo >= 2 ? `¡Súper combo x${combo}! 🌟` : "¡Combinación! ✨";
+    toast.classList.add("show");
+    setTimeout(()=> toast.classList.remove("show"), 900);
+  }
+
+  async function onCandyCellTap(ev){
+    if(candyBusy) return;
+    const r = parseInt(ev.currentTarget.dataset.r, 10);
+    const c = parseInt(ev.currentTarget.dataset.c, 10);
+    const sel = candyGame.selected;
+
+    if(!sel){
+      candyGame.selected = {r,c};
+      Sound.pickup();
+      renderCandyBoard();
+      return;
+    }
+    if(sel.r===r && sel.c===c){
+      candyGame.selected = null;
+      renderCandyBoard();
+      return;
+    }
+    const adjacent = (Math.abs(sel.r-r) + Math.abs(sel.c-c)) === 1;
+    if(!adjacent){
+      candyGame.selected = {r,c};
+      Sound.click();
+      renderCandyBoard();
+      return;
+    }
+
+    candyBusy = true;
+    swapCandy(candyGame.grid, sel.r, sel.c, r, c);
+    candyGame.selected = null;
+    renderCandyBoard();
+    await delay(140);
+
+    if(findCandyMatches(candyGame.grid).size === 0){
+      swapCandy(candyGame.grid, sel.r, sel.c, r, c);
+      Sound.invalid();
+      renderCandyBoard();
+      await delay(140);
+      candyBusy = false;
+      return;
+    }
+
+    await resolveCandyCascades();
+    candyBusy = false;
+  }
+
+  async function resolveCandyCascades(){
+    let combo = 0;
+    while(true){
+      const matches = findCandyMatches(candyGame.grid);
+      if(matches.size === 0) break;
+      combo++;
+
+      const boardEl = el("candyBoard");
+      matches.forEach(key=>{
+        const [r,c] = key.split("_").map(Number);
+        boardEl.children[r*candyGame.size+c].classList.add("matched");
+      });
+      Sound.clear(combo);
+      candyGame.score += matches.size * 10 * combo;
+      const scoreEl = el("candyScoreValue");
+      scoreEl.textContent = String(candyGame.score);
+      scoreEl.classList.remove("pop"); void scoreEl.offsetWidth; scoreEl.classList.add("pop");
+      showCandyCombo(combo);
+      if(combo >= 2){
+        const flash = el("screenFlash");
+        flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
+      }
+      await delay(300);
+
+      matches.forEach(key=>{
+        const [r,c] = key.split("_").map(Number);
+        candyGame.grid[r][c] = null;
+      });
+      applyCandyGravity(candyGame.grid, candyGame.numColors);
+      renderCandyBoard();
+      await delay(160);
+    }
+
+    if(candyGame.score > cachedCandyHighScore){
+      cachedCandyHighScore = candyGame.score;
+      storageSet(CANDY_HS_KEY, String(candyGame.score));
+      el("candyHighScoreValue").textContent = String(candyGame.score);
+      triggerRecordCelebration();
+    }
+
+    if(!candyHasValidMove(candyGame.grid)){
+      await delay(400);
+      candyGame.grid = buildCandyGridData(candyGame.size, candyGame.numColors);
+      renderCandyBoard();
+      showCandyCombo(0);
+      el("candyComboToast").textContent = "¡Mezclando el tablero! 🔄";
+    }
+  }
+
+  async function startCandyGame(){
+    const cfg = AGE_CONFIG[settings.ageGroup];
+    cachedCandyHighScore = parseInt((await storageGet(CANDY_HS_KEY)) || "0", 10);
+    candyGame = {
+      size: cfg.candyGrid,
+      numColors: cfg.candyColors,
+      score: 0,
+      selected: null,
+      grid: null
+    };
+    candyGame.grid = buildCandyGridData(candyGame.size, candyGame.numColors);
+    el("candyScoreValue").textContent = "0";
+    el("candyHighScoreValue").textContent = String(cachedCandyHighScore);
+    buildCandyBoardDOM();
+    renderCandyBoard();
+  }
+
+  function showCandyScreen(){
+    ["setupAge","setupPin","setupReady","gateScreen"].forEach(s=> el(s).classList.add("hidden"));
+    el("gameScreen").classList.remove("active");
+    el("candyScreen").classList.add("active");
+    startCandyGame();
+  }
+
+  el("candySwitchBtn").addEventListener("click", ()=>{
+    Sound.click();
+    showCandyScreen();
+  });
+  el("blocksSwitchBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("candyScreen").classList.remove("active");
+    beginGameScreen();
+  });
+  el("candyExitBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("exitConfirmModal").classList.remove("hidden");
+  });
+
+  /* ============================================================
      BOOT
   ============================================================ */
-  window.addEventListener("resize", ()=>{ if(game){ buildBoardDOM(); render(); } });
+  window.addEventListener("resize", ()=>{
+    if(game){ buildBoardDOM(); render(); }
+    if(candyGame){ sizeCandyBoard(); }
+  });
 
   async function boot(){
     settings = await loadSettings();
@@ -1206,10 +1683,26 @@
     storageGet("rb_installed_version").then(function(v){
       el("versionBadge").textContent = "v" + (v || BUNDLED_VERSION);
     });
-    if(settings && settings.ageGroup && settings.pin){
+
+    const gate = await checkLearningGate();
+    if(gate.locked){
+      showLearningGateScreen(gate);
+    } else if(settings && settings.ageGroup && settings.pin){
       beginGameScreen();
     } else {
       goToScreen("setupAge");
+    }
+
+    const plugins = (window.Capacitor && window.Capacitor.Plugins) || null;
+    if(plugins && plugins.App && plugins.App.addListener){
+      plugins.App.addListener("appStateChange", async (state)=>{
+        if(!state || !state.isActive) return;
+        // Only re-check while sitting on the lock screen — don't interrupt active gameplay.
+        if(!el("gateScreen").classList.contains("hidden")){
+          const g = await checkLearningGate();
+          if(g.locked){ showLearningGateScreen(g); } else { resumeAfterGate(); }
+        }
+      });
     }
   }
   boot();

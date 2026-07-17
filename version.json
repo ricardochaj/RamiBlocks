@@ -1,4 +1,4 @@
 {
-  "version": "1.0.6",
-  "notes": "Arreglo importante: el juego ya no termina por error justo despues de completar lineas o lograr un record. Records ahora festejan sin interrumpir el juego. Mas variedad de piezas por edad. Indicador de Nivel."
+  "version": "1.0.8",
+  "notes": "Nuevo sub-juego: Caramelos (match-3), con el boton 🍬 desde la pantalla de bloques"
 }
