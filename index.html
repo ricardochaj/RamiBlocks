@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RamiBlocks</title>
+<style>
+  :root{
+    --bg-deep:#150f3d;
+    --bg-mid:#20164f;
+    --panel:#2a1d63;
+    --panel-edge:#3d2a86;
+    --ink:#fdf6ff;
+    --ink-dim:#b8adde;
+    --candy-red:#ff0a54;
+    --candy-orange:#ff7b00;
+    --candy-yellow:#fff200;
+    --candy-green:#00ff85;
+    --candy-blue:#00c3ff;
+    --candy-purple:#b026ff;
+    --candy-pink:#ff2fd0;
+    --candy-teal:#00ffe1;
+    --gold:#ffe100;
+    --danger:#ff0a54;
+    font-size: 16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    background:
+      radial-gradient(circle at 20% 10%, #2a1d70 0%, transparent 45%),
+      radial-gradient(circle at 85% 85%, #1b2a63 0%, transparent 50%),
+      linear-gradient(180deg, var(--bg-deep), var(--bg-mid));
+    color:var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Rounded", "Segoe UI", Verdana, Roboto, sans-serif;
+    touch-action: none;
+    position:fixed; inset:0;
+  }
+  #app{ position:relative; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+  /* ---------- Decorative floating shapes ---------- */
+  .bg-shape{ position:absolute; border-radius:10px; opacity:.10; filter:blur(1px); }
+
+  /* ---------- Generic screen ---------- */
+  .screen{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: 4vmin; text-align:center;
+  }
+  .hidden{ display:none !important; }
+
+  h1.brand{
+    font-size: clamp(2rem, 8vmin, 3.4rem);
+    margin: 0 0 1rem 0;
+    letter-spacing: 1px;
+    color: var(--gold);
+    text-shadow: 0 3px 0 rgba(0,0,0,.35), 0 0 24px rgba(255,207,75,.35);
+    font-weight: 800;
+  }
+  .subtitle{ color:var(--ink-dim); font-size: clamp(.9rem,2.6vmin,1.15rem); margin-bottom: 2.4rem; max-width: 34rem; }
+
+  .choice-grid{ display:grid; grid-template-columns: repeat(2, minmax(9.5rem, 1fr)); gap: 1rem; max-width: 30rem; width: 100%; }
+  .choice-btn{
+    border:none; border-radius: 1.1rem; padding: 1.3rem 1rem; cursor:pointer;
+    background: linear-gradient(160deg, var(--panel-edge), var(--panel));
+    color: var(--ink); font-size: 1rem; font-weight:700;
+    box-shadow: 0 5px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+    display:flex; flex-direction:column; align-items:center; gap:.5rem;
+    transition: transform .08s ease;
+  }
+  .choice-btn .emoji{ font-size: 2.1rem; }
+  .choice-btn:active{ transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+
+  .step-dots{ display:flex; gap:.5rem; margin-bottom:1.6rem; }
+  .step-dots span{ width:.55rem; height:.55rem; border-radius:50%; background: var(--panel-edge); }
+  .step-dots span.active{ background: var(--gold); }
+
+  /* PIN pad */
+  .pin-display{ display:flex; gap:.8rem; margin-bottom: 1.8rem; }
+  .pin-dot{ width: 1.1rem; height:1.1rem; border-radius:50%; border:2px solid var(--panel-edge); background:transparent; transition: background .1s, border-color .1s;}
+  .pin-dot.filled{ background: var(--gold); border-color: var(--gold); }
+  .pin-pad{ display:grid; grid-template-columns: repeat(3, 4.6rem); gap: .8rem; }
+  .pin-key{
+    width:4.6rem; height:4.6rem; border-radius: 50%; border:none; cursor:pointer;
+    background: linear-gradient(160deg, var(--panel-edge), var(--panel));
+    color: var(--ink); font-size: 1.5rem; font-weight:700;
+    box-shadow: 0 4px 0 rgba(0,0,0,.35);
+  }
+  .pin-key:active{ transform: translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.35); }
+  .pin-key.wide{ font-size: 1rem; }
+  .pin-error{ color: var(--danger); font-weight:700; min-height:1.4rem; margin-bottom:.6rem; }
+
+  .big-btn{
+    margin-top: 1.6rem; border:none; border-radius: 1rem; padding: .9rem 2.2rem; cursor:pointer;
+    background: linear-gradient(160deg, var(--candy-green), #22b57e);
+    color:#08331f; font-weight:800; font-size:1.05rem;
+    box-shadow: 0 5px 0 #0f6b47;
+  }
+  .big-btn:active{ transform: translateY(4px); box-shadow:0 1px 0 #0f6b47; }
+  .ghost-btn{
+    background: transparent; border: 2px solid var(--panel-edge); color: var(--ink-dim);
+    border-radius: 1rem; padding: .7rem 1.6rem; font-weight:700; cursor:pointer; margin-top: .8rem;
+  }
+
+  /* ---------- Game screen ---------- */
+  #gameScreen{ display:none; flex-direction:column; width:100%; height:100%; align-items:center; padding: 2vmin 2vmin calc(env(safe-area-inset-bottom) + 1vmin); }
+  #gameScreen.active{ display:flex; }
+
+  .topbar{ width:100%; max-width: 46rem; display:flex; align-items:center; justify-content:space-between; margin-bottom: 1vmin; flex: 0 0 auto; }
+
+  .board-wrap{ flex: 1 1 auto; min-height: 0; width: 100%; display:flex; align-items:center; justify-content:center; }
+  .score-box{ background: var(--panel); border-radius: .9rem; padding: .5rem 1rem; box-shadow: inset 0 0 0 2px var(--panel-edge); text-align:left; }
+  .score-box .label{ font-size:.65rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; }
+  .score-box .value{ font-size:1.35rem; font-weight:800; color: var(--gold); line-height:1.1; }
+  .icon-btn{
+    width:2.8rem; height:2.8rem; border-radius:50%; border:none; cursor:pointer;
+    background: var(--panel); box-shadow: inset 0 0 0 2px var(--panel-edge);
+    font-size: 1.3rem; color: var(--ink-dim); display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:active{ transform: scale(.92); }
+
+  #board{
+    position:relative;
+    display:grid;
+    background: var(--panel);
+    border-radius: 1rem;
+    box-shadow: inset 0 0 0 3px var(--panel-edge), 0 10px 0 rgba(0,0,0,.25);
+    padding: .6vmin;
+    gap: .45vmin;
+    aspect-ratio: 1 / 1;
+    touch-action:none;
+    max-width: 46rem;
+    max-height: 46rem;
+  }
+  .cell{
+    border-radius: .4rem;
+    background: rgba(255,255,255,.04);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+    transition: background .08s, box-shadow .08s;
+  }
+  .cell.filled, .piece-cell{
+    clip-path: polygon(24% 0%, 76% 0%, 100% 24%, 100% 76%, 76% 100%, 24% 100%, 0% 76%, 0% 24%);
+    position: relative;
+    overflow: hidden;
+  }
+  .cell.filled::before, .piece-cell::before{
+    content:""; position:absolute; inset:0;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.75) 46%, rgba(255,255,255,.15) 54%, transparent 66%);
+    mix-blend-mode: overlay;
+  }
+  .cell.filled::after, .piece-cell::after{
+    content:""; position:absolute; top:12%; left:16%; width:22%; height:22%; border-radius:50%;
+    background: radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 70%);
+    animation: sparkleTwinkle 2.4s ease-in-out infinite;
+  }
+  @keyframes sparkleTwinkle{ 0%,100%{ opacity:.35; transform: scale(.85);} 50%{ opacity:1; transform: scale(1.15);} }
+  .cell.filled{ box-shadow: inset 0 -4px 0 rgba(0,0,0,.3), inset 0 3px 0 rgba(255,255,255,.55), 0 0 10px -2px rgba(255,255,255,.25); }
+  .cell.just-placed{ animation: placePop .32s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes placePop{ 0%{ transform: scale(.35) rotate(-8deg); } 60%{ transform: scale(1.14) rotate(3deg); } 100%{ transform: scale(1) rotate(0); } }
+  .cell.preview-ok{ background: rgba(0,230,118,.4); box-shadow: inset 0 0 0 2px rgba(0,230,118,.85); animation: pulseGlow .5s ease-in-out infinite; }
+  .cell.preview-bad{ background: rgba(255,45,85,.32); box-shadow: inset 0 0 0 2px rgba(255,45,85,.7); }
+  @keyframes pulseGlow{ 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(1.35);} }
+  .cell.clearing{ animation: pop .3s ease forwards; }
+  @keyframes pop{ 0%{ transform:scale(1) rotate(0); filter:brightness(1);} 35%{ transform:scale(1.3) rotate(8deg); filter:brightness(2.2);} 100%{ transform:scale(0) rotate(25deg); filter:brightness(2.6);} }
+
+  .confetti-piece{
+    position:absolute; top:0; left:0; width:.5rem; height:.5rem; border-radius:2px;
+    pointer-events:none; z-index:45; will-change: transform, opacity;
+  }
+  @keyframes confettiFly{
+    0%{ transform: translate(0,0) rotate(0) scale(1); opacity:1; }
+    100%{ transform: var(--fly-to) rotate(var(--fly-rot)) scale(.4); opacity:0; }
+  }
+
+  #app.shake{ animation: screenShake .34s ease; }
+  @keyframes screenShake{
+    0%,100%{ transform: translate(0,0); }
+    20%{ transform: translate(-6px,3px); }
+    40%{ transform: translate(6px,-3px); }
+    60%{ transform: translate(-4px,2px); }
+    80%{ transform: translate(4px,-2px); }
+  }
+
+  #tray{ width: min(92vw, 46rem); display:flex; justify-content:space-around; align-items:center; margin-top: 1vmin; flex: 0 0 auto; height: 19vh; max-height: 8.5rem; min-height: 5.5rem; }
+  .piece-slot{ display:flex; align-items:center; justify-content:center; width: 30%; height: 100%; }
+  .piece{ display:grid; touch-action:none; cursor:grab; }
+  .piece-cell{ border-radius: .32rem; box-shadow: inset 0 -3px 0 rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.35); }
+  .piece.dragging{ opacity: .25; }
+
+  .ghost-piece{ position:fixed; pointer-events:none; z-index:50; display:grid; }
+  .ghost-cell{ border-radius:.32rem; box-shadow: inset 0 -3px 0 rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.35); }
+
+  /* ---------- Modals ---------- */
+  .modal-backdrop{
+    position:absolute; inset:0; background: rgba(9,6,25,.72); display:flex; align-items:center; justify-content:center; z-index:60; padding: 4vmin;
+  }
+  .modal-card{
+    background: var(--panel); border-radius: 1.4rem; padding: 2.2rem 1.8rem; max-width: 26rem; width:100%;
+    box-shadow: 0 12px 0 rgba(0,0,0,.3), inset 0 0 0 2px var(--panel-edge); text-align:center;
+  }
+  .modal-card h2{ margin: 0 0 .4rem 0; color: var(--gold); font-size:1.6rem; }
+  .modal-card p{ color: var(--ink-dim); margin: 0 0 1.4rem 0; font-size:.95rem; }
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; padding: .7rem 0; border-bottom: 1px solid var(--panel-edge); text-align:left; }
+  .settings-row:last-of-type{ border-bottom:none; }
+  .settings-row .label{ font-weight:700; }
+  .small-btn{ border:none; border-radius:.7rem; padding:.5rem .9rem; background: var(--panel-edge); color:var(--ink); font-weight:700; cursor:pointer; font-size:.85rem; }
+  .small-btn.danger{ background: var(--danger); color:#3a0710; }
+  .small-btn:active{ transform: scale(.95); }
+
+  .combo-toast{
+    position:absolute; top: 14vmin; left:50%; transform: translateX(-50%) translateY(-10px) scale(.7); opacity:0;
+    background: linear-gradient(160deg, var(--gold), var(--candy-orange)); color:#3a1e00; font-weight:800; font-size:1.5rem;
+    padding: .6rem 1.5rem; border-radius: 1.2rem; box-shadow: 0 6px 0 rgba(0,0,0,.25), 0 0 30px -4px var(--gold); z-index:40;
+    transition: opacity .2s ease, transform .2s cubic-bezier(.34,1.56,.64,1); pointer-events:none;
+  }
+  .combo-toast.show{ opacity:1; transform: translateX(-50%) translateY(0) scale(1.08); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== SETUP: STEP 1 - AGE ===================== -->
+  <div id="setupAge" class="screen">
+    <h1 class="brand">RamiBlocks 🎉</h1>
+    <p class="subtitle">Antes de jugar, un adulto tiene que configurar el juego. ¿Para qué edad lo preparamos?</p>
+    <div class="step-dots"><span class="active"></span><span></span><span></span></div>
+    <div class="choice-grid">
+      <button class="choice-btn" data-age="3-5"><span class="emoji">🧸</span>3 a 5 años</button>
+      <button class="choice-btn" data-age="6-8"><span class="emoji">🚀</span>6 a 8 años</button>
+      <button class="choice-btn" data-age="9-12"><span class="emoji">⭐</span>9 a 12 años</button>
+      <button class="choice-btn" data-age="13+"><span class="emoji">🔥</span>13 años o más</button>
+    </div>
+  </div>
+
+  <!-- ===================== SETUP: STEP 2 - PARENT PIN ===================== -->
+  <div id="setupPin" class="screen hidden">
+    <h1 class="brand" style="font-size:clamp(1.5rem,6vmin,2.2rem)">PIN para el adulto 🔒</h1>
+    <p class="subtitle" id="pinPrompt">Creá un PIN de 4 dígitos. Lo vas a necesitar para cambiar la configuración más adelante.</p>
+    <div class="step-dots"><span></span><span class="active"></span><span></span></div>
+    <div class="pin-error" id="setupPinError"></div>
+    <div class="pin-display" id="setupPinDisplay">
+      <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+    </div>
+    <div class="pin-pad" id="setupPinPad"></div>
+  </div>
+
+  <!-- ===================== SETUP: STEP 3 - READY ===================== -->
+  <div id="setupReady" class="screen hidden">
+    <div class="step-dots"><span></span><span></span><span class="active"></span></div>
+    <h1 class="brand" style="font-size:clamp(1.6rem,7vmin,2.6rem)" id="readyTitle">¡Todo listo! 🎈</h1>
+    <p class="subtitle" id="readySubtitle">El juego quedó configurado. ¡A jugar!</p>
+    <button class="big-btn" id="startPlayingBtn">Empezar a jugar</button>
+  </div>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <div id="gameScreen">
+    <div class="topbar">
+      <div class="score-box">
+        <div class="label">Puntos</div>
+        <div class="value" id="scoreValue">0</div>
+      </div>
+      <div class="score-box">
+        <div class="label">Mejor puntaje</div>
+        <div class="value" id="highScoreValue">0</div>
+      </div>
+      <button class="icon-btn" id="settingsBtn">⚙️</button>
+    </div>
+    <div class="board-wrap"><div id="board"></div></div>
+    <div id="tray"></div>
+    <div class="combo-toast" id="comboToast">¡Combo!</div>
+  </div>
+
+  <!-- ===================== PARENT PIN GATE MODAL ===================== -->
+  <div class="modal-backdrop hidden" id="pinGateModal">
+    <div class="modal-card">
+      <h2>Zona de adultos 🔒</h2>
+      <p>Ingresá el PIN para cambiar la configuración.</p>
+      <div class="pin-error" id="gatePinError"></div>
+      <div class="pin-display" id="gatePinDisplay">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-pad" id="gatePinPad" style="margin: 0 auto;"></div>
+      <button class="ghost-btn" id="gateCancelBtn">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ===================== SETTINGS PANEL MODAL ===================== -->
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal-card">
+      <h2>Configuración</h2>
+      <div class="settings-row">
+        <span class="label">Edad configurada</span>
+        <span id="currentAgeLabel">-</span>
+      </div>
+      <div class="settings-row">
+        <span class="label">Cambiar edad / dificultad</span>
+        <button class="small-btn" id="changeAgeBtn">Cambiar</button>
+      </div>
+      <div class="settings-row">
+        <span class="label">Cambiar PIN</span>
+        <button class="small-btn" id="changePinBtn">Cambiar</button>
+      </div>
+      <div class="settings-row">
+        <span class="label">Reiniciar mejor puntaje</span>
+        <button class="small-btn danger" id="resetScoreBtn">Reiniciar</button>
+      </div>
+      <button class="big-btn" id="closeSettingsBtn" style="width:100%;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ===================== GAME OVER MODAL ===================== -->
+  <div class="modal-backdrop hidden" id="gameOverModal">
+    <div class="modal-card">
+      <h2 id="gameOverTitle">¡Juego terminado! 🎊</h2>
+      <p id="gameOverText">Lo hiciste muy bien.</p>
+      <button class="big-btn" id="restartBtn" style="width:100%;">Jugar de nuevo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     STORAGE HELPERS — uses Capacitor Preferences (native storage, survives
+     OTA content updates) when running inside the packaged app, falls back
+     to localStorage automatically when just opened in a browser.
+  ============================================================ */
+  const STORAGE_KEY = "bloqueFiestaSettings";
+  const HS_KEY = "bloqueFiestaHighScore";
+
+  function nativePrefs(){
+    return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
+  }
+  async function storageGet(key){
+    const prefs = nativePrefs();
+    if(prefs){ try{ const r = await prefs.get({key}); if(r && r.value != null) return r.value; }catch(e){} }
+    try{ return localStorage.getItem(key); }catch(e){ return null; }
+  }
+  function storageSet(key, value){
+    const prefs = nativePrefs();
+    if(prefs){ try{ prefs.set({key, value}); }catch(e){} }
+    try{ localStorage.setItem(key, value); }catch(e){}
+  }
+
+  async function loadSettings(){
+    try{ return JSON.parse(await storageGet(STORAGE_KEY)); }catch(e){ return null; }
+  }
+  function saveSettings(s){ storageSet(STORAGE_KEY, JSON.stringify(s)); }
+  async function loadHighScore(){ return parseInt((await storageGet(HS_KEY)) || "0", 10); }
+  function saveHighScore(v){ cachedHighScore = v; storageSet(HS_KEY, String(v)); }
+
+  /* ============================================================
+     AUDIO — tiny synthesized sound effects, no external files
+  ============================================================ */
+  let actx = null;
+  function ctx(){
+    if(!actx){ actx = new (window.AudioContext || window.webkitAudioContext)(); }
+    return actx;
+  }
+  function tone(freq, start, dur, type, gainPeak){
+    const c = ctx();
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(freq, c.currentTime + start);
+    g.gain.setValueAtTime(0.0001, c.currentTime + start);
+    g.gain.exponentialRampToValueAtTime(gainPeak || 0.18, c.currentTime + start + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + start + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(c.currentTime + start);
+    o.stop(c.currentTime + start + dur + 0.02);
+  }
+  const Sound = {
+    click(){ try{ tone(520, 0, 0.06, "triangle", 0.12); }catch(e){} },
+    place(){ try{ tone(340, 0, 0.08, "square", 0.10); tone(460, 0.03, 0.07, "square", 0.08); }catch(e){} },
+    invalid(){ try{ tone(140, 0, 0.12, "sawtooth", 0.10); }catch(e){} },
+    clear(combo){ try{
+        const base = 520;
+        const notes = Math.min(3 + combo, 8);
+        for(let i=0;i<notes;i++){ tone(base + i*90, i*0.045, 0.13, "triangle", 0.14); }
+      }catch(e){} },
+    gameOver(){ try{
+        tone(420, 0, 0.18, "sine", 0.15); tone(340, 0.16, 0.18, "sine", 0.14);
+        tone(240, 0.32, 0.3, "sine", 0.13);
+      }catch(e){} },
+    win(){ try{
+        [520,660,780,940].forEach((f,i)=> tone(f, i*0.09, 0.16, "triangle", 0.15));
+      }catch(e){} }
+  };
+
+  /* ============================================================
+     DIFFICULTY / SHAPE DEFINITIONS
+  ============================================================ */
+  const SHAPES = {
+    dot: [[0,0]],
+    h2: [[0,0],[0,1]],
+    v2: [[0,0],[1,0]],
+    sq2: [[0,0],[0,1],[1,0],[1,1]],
+    h3: [[0,0],[0,1],[0,2]],
+    v3: [[0,0],[1,0],[2,0]],
+    lSmallA: [[0,0],[0,1],[1,0]],
+    lSmallB: [[0,0],[0,1],[1,1]],
+    lSmallC: [[0,0],[1,0],[1,1]],
+    lSmallD: [[0,1],[1,0],[1,1]],
+    h4: [[0,0],[0,1],[0,2],[0,3]],
+    v4: [[0,0],[1,0],[2,0],[3,0]],
+    lBigA: [[0,0],[1,0],[2,0],[2,1]],
+    lBigB: [[0,1],[1,1],[2,1],[2,0]],
+    lBigC: [[0,0],[0,1],[1,0],[2,0]],
+    lBigD: [[0,0],[0,1],[1,1],[2,1]],
+    tShape: [[0,0],[0,1],[0,2],[1,1]],
+    sShape: [[1,0],[1,1],[0,1],[0,2]],
+    zShape: [[0,0],[0,1],[1,1],[1,2]],
+    h5: [[0,0],[0,1],[0,2],[0,3],[0,4]],
+    v5: [[0,0],[1,0],[2,0],[3,0],[4,0]],
+    plus: [[0,1],[1,0],[1,1],[1,2],[2,1]],
+    sq3: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]],
+    zigBig: [[0,0],[1,0],[1,1],[2,1],[2,2]]
+  };
+
+  const SET_EASY = ["dot","h2","v2","sq2","h3","v3","lSmallA","lSmallB","lSmallC","lSmallD"];
+  const SET_MEDIUM = SET_EASY.concat(["h4","v4","lBigA","lBigB","tShape"]);
+  const SET_MED_HARD = SET_MEDIUM.concat(["lBigC","lBigD","sShape","zShape"]);
+  const SET_HARD = SET_MED_HARD.concat(["h5","v5","plus","sq3","zigBig"]);
+
+  const PALETTE = ["#ff2d55","#ff8a00","#ffe600","#00e676","#00b0ff","#c04dff","#ff3fd8","#00ffd5"];
+
+  function shade(hex, percent){
+    const n = parseInt(hex.slice(1),16);
+    let r = (n>>16)&255, g=(n>>8)&255, b=n&255;
+    r = Math.max(0, Math.min(255, Math.round(r + (percent<0? r : 255-r)*percent)));
+    g = Math.max(0, Math.min(255, Math.round(g + (percent<0? g : 255-g)*percent)));
+    b = Math.max(0, Math.min(255, Math.round(b + (percent<0? b : 255-b)*percent)));
+    return "#" + [r,g,b].map(v=>v.toString(16).padStart(2,"0")).join("");
+  }
+  function glossyGradient(hex){
+    return `linear-gradient(155deg, ${shade(hex,0.45)} 0%, ${hex} 45%, ${shade(hex,-0.28)} 100%)`;
+  }
+
+  const AGE_CONFIG = {
+    "3-5":  { grid: 6, shapeSet: SET_EASY,     assist: true,  label: "3 a 5 años", cellGap: true },
+    "6-8":  { grid: 7, shapeSet: SET_MEDIUM,   assist: true,  label: "6 a 8 años" },
+    "9-12": { grid: 8, shapeSet: SET_MED_HARD, assist: false, label: "9 a 12 años" },
+    "13+":  { grid: 8, shapeSet: SET_HARD,     assist: false, label: "13 años o más" }
+  };
+
+  /* ============================================================
+     APP STATE
+  ============================================================ */
+  let settings = null;                // {ageGroup, pin} — populated by boot()
+  let cachedHighScore = 0;
+  let pendingPin = "";                // used during setup / pin change flows
+  let pinChangeStage = null;          // null | 'first' | 'confirm'
+  let firstPinEntry = "";
+  let pinPurpose = null;              // 'setup' | 'change'
+
+  let game = null; // current game state, built by newGame()
+
+  const el = (id) => document.getElementById(id);
+
+  /* ============================================================
+     PIN PAD BUILDER (reusable)
+  ============================================================ */
+  function buildPinPad(container, onDigit, onDelete){
+    container.innerHTML = "";
+    const layout = ["1","2","3","4","5","6","7","8","9","","0","del"];
+    layout.forEach(key=>{
+      if(key === ""){ const spacer = document.createElement("div"); container.appendChild(spacer); return; }
+      const btn = document.createElement("button");
+      btn.className = "pin-key" + (key === "del" ? " wide" : "");
+      btn.textContent = key === "del" ? "⌫" : key;
+      btn.addEventListener("click", ()=>{
+        Sound.click();
+        if(key === "del"){ onDelete(); } else { onDigit(key); }
+      });
+      container.appendChild(btn);
+    });
+  }
+  function renderPinDots(displayEl, value){
+    const dots = displayEl.querySelectorAll(".pin-dot");
+    dots.forEach((d,i)=> d.classList.toggle("filled", i < value.length));
+  }
+
+  /* ============================================================
+     SETUP FLOW: STEP 1 - AGE
+  ============================================================ */
+  document.querySelectorAll("#setupAge .choice-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      Sound.click();
+      settings = { ageGroup: btn.dataset.age, pin: null };
+      goToScreen("setupPin");
+      startPinEntry("setup");
+    });
+  });
+
+  function startPinEntry(purpose){
+    pinPurpose = purpose;
+    pinChangeStage = "first";
+    firstPinEntry = "";
+    pendingPin = "";
+    el("setupPinError").textContent = "";
+    el("pinPrompt").textContent = "Creá un PIN de 4 dígitos. Lo vas a necesitar para cambiar la configuración más adelante.";
+    renderPinDots(el("setupPinDisplay"), "");
+    buildPinPad(el("setupPinPad"), onSetupPinDigit, onSetupPinDelete);
+  }
+
+  function onSetupPinDigit(d){
+    if(pendingPin.length >= 4) return;
+    pendingPin += d;
+    renderPinDots(el("setupPinDisplay"), pendingPin);
+    if(pendingPin.length === 4){
+      setTimeout(handleSetupPinComplete, 150);
+    }
+  }
+  function onSetupPinDelete(){
+    pendingPin = pendingPin.slice(0, -1);
+    renderPinDots(el("setupPinDisplay"), pendingPin);
+  }
+  function handleSetupPinComplete(){
+    if(pinChangeStage === "first"){
+      firstPinEntry = pendingPin;
+      pendingPin = "";
+      pinChangeStage = "confirm";
+      el("pinPrompt").textContent = "Repetí el PIN para confirmar.";
+      renderPinDots(el("setupPinDisplay"), "");
+    } else {
+      if(pendingPin === firstPinEntry){
+        settings.pin = pendingPin;
+        saveSettings(settings);
+        Sound.win();
+        el("readyTitle").textContent = "¡Todo listo! 🎈";
+        el("readySubtitle").textContent = "Configuramos el juego para " + AGE_CONFIG[settings.ageGroup].label + ". ¡A jugar!";
+        goToScreen("setupReady");
+      } else {
+        el("setupPinError").textContent = "Los PIN no coinciden. Probá de nuevo.";
+        Sound.invalid();
+        pinChangeStage = "first";
+        pendingPin = "";
+        firstPinEntry = "";
+        el("pinPrompt").textContent = "Creá un PIN de 4 dígitos.";
+        renderPinDots(el("setupPinDisplay"), "");
+      }
+    }
+  }
+
+  el("startPlayingBtn").addEventListener("click", ()=>{
+    Sound.click();
+    beginGameScreen();
+  });
+
+  function goToScreen(id){
+    ["setupAge","setupPin","setupReady"].forEach(s=> el(s).classList.add("hidden"));
+    el(id).classList.remove("hidden");
+  }
+
+  /* ============================================================
+     PARENT PIN GATE (settings lock)
+  ============================================================ */
+  let gatePinValue = "";
+  let onGateSuccess = null;
+
+  function openPinGate(onSuccess){
+    onGateSuccess = onSuccess;
+    gatePinValue = "";
+    el("gatePinError").textContent = "";
+    renderPinDots(el("gatePinDisplay"), "");
+    buildPinPad(el("gatePinPad"), onGateDigit, onGateDelete);
+    el("pinGateModal").classList.remove("hidden");
+  }
+  function onGateDigit(d){
+    if(gatePinValue.length >= 4) return;
+    gatePinValue += d;
+    renderPinDots(el("gatePinDisplay"), gatePinValue);
+    if(gatePinValue.length === 4){
+      setTimeout(()=>{
+        if(gatePinValue === settings.pin){
+          el("pinGateModal").classList.add("hidden");
+          Sound.win();
+          onGateSuccess && onGateSuccess();
+        } else {
+          Sound.invalid();
+          el("gatePinError").textContent = "PIN incorrecto.";
+          gatePinValue = "";
+          renderPinDots(el("gatePinDisplay"), "");
+        }
+      }, 120);
+    }
+  }
+  function onGateDelete(){
+    gatePinValue = gatePinValue.slice(0,-1);
+    renderPinDots(el("gatePinDisplay"), gatePinValue);
+  }
+  el("gateCancelBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("pinGateModal").classList.add("hidden");
+  });
+
+  el("settingsBtn").addEventListener("click", ()=>{
+    Sound.click();
+    openPinGate(openSettingsPanel);
+  });
+
+  function openSettingsPanel(){
+    el("currentAgeLabel").textContent = AGE_CONFIG[settings.ageGroup].label;
+    el("settingsModal").classList.remove("hidden");
+  }
+  el("closeSettingsBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("settingsModal").classList.add("hidden");
+  });
+  el("resetScoreBtn").addEventListener("click", ()=>{
+    Sound.click();
+    saveHighScore(0);
+    cachedHighScore = 0;
+    el("highScoreValue").textContent = "0";
+  });
+  el("changePinBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("settingsModal").classList.add("hidden");
+    goToScreen("setupPin");
+    el("gameScreen").classList.remove("active");
+    startPinEntry("change");
+  });
+  el("changeAgeBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("settingsModal").classList.add("hidden");
+    el("gameScreen").classList.remove("active");
+    goToScreen("setupAge");
+  });
+
+  /* ============================================================
+     GAME LOGIC
+  ============================================================ */
+  function beginGameScreen(){
+    el("gameScreen").classList.add("active");
+    ["setupAge","setupPin","setupReady"].forEach(s=> el(s).classList.add("hidden"));
+    newGame();
+  }
+
+  function newGame(){
+    const cfg = AGE_CONFIG[settings.ageGroup];
+    game = {
+      cfg: cfg,
+      size: cfg.grid,
+      grid: Array.from({length: cfg.grid}, ()=> Array(cfg.grid).fill(null)),
+      score: 0,
+      tray: []
+    };
+    el("scoreValue").textContent = "0";
+    el("highScoreValue").textContent = String(cachedHighScore);
+    buildBoardDOM();
+    fillTray();
+    render();
+  }
+
+  function sizeBoard(){
+    const wrap = document.querySelector(".board-wrap");
+    const board = el("board");
+    if(!wrap || !board) return;
+    const availW = wrap.clientWidth;
+    const availH = wrap.clientHeight;
+    const size = Math.max(120, Math.floor(Math.min(availW, availH)) - 4);
+    board.style.width = size + "px";
+    board.style.height = size + "px";
+  }
+
+  function buildBoardDOM(){
+    const board = el("board");
+    board.innerHTML = "";
+    board.style.gridTemplateColumns = `repeat(${game.size}, 1fr)`;
+    board.style.gridTemplateRows = `repeat(${game.size}, 1fr)`;
+    for(let r=0;r<game.size;r++){
+      for(let c=0;c<game.size;c++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.r = r; cell.dataset.c = c;
+        board.appendChild(cell);
+      }
+    }
+    sizeBoard();
+  }
+
+  function randomShapeKey(){
+    const set = game.cfg.shapeSet;
+    return set[Math.floor(Math.random()*set.length)];
+  }
+  function randomColor(){ return PALETTE[Math.floor(Math.random()*PALETTE.length)]; }
+
+  function makePiece(){
+    return { id: Math.random().toString(36).slice(2), key: randomShapeKey(), color: randomColor() };
+  }
+
+  function fillTray(){
+    let attempts = 0;
+    let candidate;
+    do{
+      candidate = [makePiece(), makePiece(), makePiece()];
+      attempts++;
+    } while(attempts < 6 && !anyPieceFits(candidate));
+    game.tray = candidate;
+  }
+
+  function shapeCells(key){ return SHAPES[key]; }
+
+  function canPlace(shapeKey, anchorR, anchorC){
+    const cells = shapeCells(shapeKey);
+    for(const [dr,dc] of cells){
+      const r = anchorR+dr, c = anchorC+dc;
+      if(r<0||c<0||r>=game.size||c>=game.size) return false;
+      if(game.grid[r][c]) return false;
+    }
+    return true;
+  }
+
+  function pieceFitsAnywhere(shapeKey){
+    for(let r=0;r<game.size;r++){
+      for(let c=0;c<game.size;c++){
+        if(canPlace(shapeKey, r, c)) return true;
+      }
+    }
+    return false;
+  }
+
+  function anyPieceFits(tray){
+    return tray.some(p => pieceFitsAnywhere(p.key));
+  }
+
+  function placePiece(piece, anchorR, anchorC){
+    const cells = shapeCells(piece.key);
+    cells.forEach(([dr,dc])=>{
+      game.grid[anchorR+dr][anchorC+dc] = piece.color;
+    });
+    game.score += cells.length * 2;
+    Sound.place();
+
+    const cleared = clearLines();
+    game.tray = game.tray.filter(p => p.id !== piece.id);
+    if(game.tray.length === 0) fillTray();
+
+    render();
+    const boardEl = el("board");
+    cells.forEach(([dr,dc])=>{
+      const r = anchorR+dr, c = anchorC+dc;
+      const idx = r*game.size+c;
+      const cellEl = boardEl.children[idx];
+      if(cellEl){ cellEl.classList.remove("just-placed"); void cellEl.offsetWidth; cellEl.classList.add("just-placed"); }
+    });
+    el("scoreValue").textContent = String(game.score);
+
+    if(cleared > 0){
+      if(game.score > cachedHighScore){ saveHighScore(game.score); el("highScoreValue").textContent = String(game.score); }
+    }
+
+    if(!anyPieceFits(game.tray)){
+      setTimeout(triggerGameOver, 350);
+    }
+  }
+
+  function clearLines(){
+    const size = game.size;
+    const fullRows = [];
+    const fullCols = [];
+    for(let r=0;r<size;r++){ if(game.grid[r].every(v=>v)) fullRows.push(r); }
+    for(let c=0;c<size;c++){ let full=true; for(let r=0;r<size;r++){ if(!game.grid[r][c]){ full=false; break; } } if(full) fullCols.push(c); }
+    const totalLines = fullRows.length + fullCols.length;
+    if(totalLines === 0) return 0;
+
+    const board = el("board");
+    fullRows.forEach(r=>{
+      for(let c=0;c<size;c++){
+        const idx = r*size+c;
+        board.children[idx].classList.add("clearing");
+      }
+    });
+    fullCols.forEach(c=>{
+      for(let r=0;r<size;r++){
+        const idx = r*size+c;
+        board.children[idx].classList.add("clearing");
+      }
+    });
+
+    setTimeout(()=>{
+      fullRows.forEach(r=>{ for(let c=0;c<size;c++) game.grid[r][c] = null; });
+      fullCols.forEach(c=>{ for(let r=0;r<size;r++) game.grid[r][c] = null; });
+      render();
+    }, 260);
+
+    const bonus = totalLines * 50 * totalLines;
+    game.score += bonus;
+    Sound.clear(totalLines);
+    showCombo(totalLines);
+    spawnConfetti(fullRows, fullCols, size);
+    if(totalLines >= 2){
+      const app = el("app");
+      app.classList.remove("shake"); void app.offsetWidth; app.classList.add("shake");
+    }
+    return totalLines;
+  }
+
+  function spawnConfetti(fullRows, fullCols, size){
+    const boardEl = el("board");
+    const boardRect = boardEl.getBoundingClientRect();
+    const cs = boardRect.width / size;
+    const app = el("app");
+    const appRect = app.getBoundingClientRect();
+    const colors = PALETTE.concat(["#ffffff"]);
+    const spots = [];
+    fullRows.forEach(r=> spots.push({x: boardRect.left - appRect.left + boardRect.width/2, y: boardRect.top - appRect.top + r*cs + cs/2}));
+    fullCols.forEach(c=> spots.push({x: boardRect.left - appRect.left + c*cs + cs/2, y: boardRect.top - appRect.top + boardRect.height/2}));
+
+    spots.forEach(spot=>{
+      const count = 10;
+      for(let i=0;i<count;i++){
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece";
+        const color = colors[Math.floor(Math.random()*colors.length)];
+        piece.style.background = color;
+        piece.style.left = spot.x + "px";
+        piece.style.top = spot.y + "px";
+        if(Math.random() > 0.5) piece.style.borderRadius = "50%";
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 60 + Math.random()*90;
+        const flyX = Math.cos(angle) * dist;
+        const flyY = Math.sin(angle) * dist - 40;
+        piece.style.setProperty("--fly-to", `translate(${flyX}px, ${flyY}px)`);
+        piece.style.setProperty("--fly-rot", (Math.random()*720 - 360) + "deg");
+        piece.style.animation = `confettiFly ${0.6 + Math.random()*0.4}s ease-out forwards`;
+        app.appendChild(piece);
+        setTimeout(()=> piece.remove(), 1100);
+      }
+    });
+  }
+
+  function showCombo(lines){
+    const toast = el("comboToast");
+    toast.textContent = lines >= 2 ? `¡Súper combo x${lines}! 🌟` : "¡Línea completa! ✨";
+    toast.classList.add("show");
+    setTimeout(()=> toast.classList.remove("show"), 900);
+  }
+
+  function render(){
+    const board = el("board");
+    for(let r=0;r<game.size;r++){
+      for(let c=0;c<game.size;c++){
+        const idx = r*game.size+c;
+        const cellEl = board.children[idx];
+        const val = game.grid[r][c];
+        cellEl.classList.remove("clearing","preview-ok","preview-bad");
+        if(val){ cellEl.classList.add("filled"); cellEl.style.background = glossyGradient(val); }
+        else { cellEl.classList.remove("filled"); cellEl.style.background = ""; }
+      }
+    }
+    renderTray();
+  }
+
+  function renderTray(){
+    const tray = el("tray");
+    tray.innerHTML = "";
+    game.tray.forEach(piece=>{
+      const slot = document.createElement("div");
+      slot.className = "piece-slot";
+      const pieceEl = buildPieceEl(piece);
+      slot.appendChild(pieceEl);
+      tray.appendChild(slot);
+      attachDrag(pieceEl, piece);
+    });
+  }
+
+  function shapeBounds(cells){
+    let maxR=0, maxC=0;
+    cells.forEach(([r,c])=>{ maxR=Math.max(maxR,r); maxC=Math.max(maxC,c); });
+    return { rows: maxR+1, cols: maxC+1 };
+  }
+
+  function buildPieceEl(piece, cellPx){
+    const cells = shapeCells(piece.key);
+    const b = shapeBounds(cells);
+    const size = cellPx || pieceCellSize();
+    const wrap = document.createElement("div");
+    wrap.className = "piece";
+    wrap.style.gridTemplateColumns = `repeat(${b.cols}, ${size}px)`;
+    wrap.style.gridTemplateRows = `repeat(${b.rows}, ${size}px)`;
+    wrap.style.width = (b.cols*size) + "px";
+    wrap.style.height = (b.rows*size) + "px";
+    // fill grid with empty placeholders then color the ones present
+    const map = {};
+    cells.forEach(([r,c])=> map[r+"_"+c] = true);
+    for(let r=0;r<b.rows;r++){
+      for(let c=0;c<b.cols;c++){
+        const d = document.createElement("div");
+        if(map[r+"_"+c]){
+          d.className = "piece-cell";
+          d.style.background = glossyGradient(piece.color);
+          d.style.gridRowStart = r+1; d.style.gridColumnStart = c+1;
+        } else {
+          d.style.gridRowStart = r+1; d.style.gridColumnStart = c+1;
+        }
+        wrap.appendChild(d);
+      }
+    }
+    return wrap;
+  }
+
+  function pieceCellSize(){
+    const boardEl = el("board");
+    if(boardEl.children.length >= 1){
+      const c0 = boardEl.children[0].getBoundingClientRect();
+      if(c0.width > 0) return Math.max(14, Math.min(c0.width, 34));
+    }
+    const boardCell = boardEl.clientWidth / game.size;
+    return Math.max(14, Math.min(boardCell, 34));
+  }
+
+  // Measures the real on-screen grid pitch by reading actual cell positions,
+  // so it correctly accounts for #board's padding and the gap between cells
+  // (a plain width/size division would drift more the further from the top-left corner).
+  function getCellPitch(boardEl){
+    const c0 = boardEl.children[0].getBoundingClientRect();
+    const c1 = boardEl.children[1] ? boardEl.children[1].getBoundingClientRect() : c0;
+    const cRow = boardEl.children[game.size] ? boardEl.children[game.size].getBoundingClientRect() : c0;
+    return {
+      originLeft: c0.left,
+      originTop: c0.top,
+      pitchX: c1.left - c0.left || c0.width,
+      pitchY: cRow.top - c0.top || c0.height
+    };
+  }
+
+  /* ---------------- Drag & drop (pointer events) ---------------- */
+  function attachDrag(pieceEl, piece){
+    pieceEl.addEventListener("pointerdown", (ev)=>{
+      ev.preventDefault();
+      startDrag(ev, pieceEl, piece);
+    });
+  }
+
+  function startDrag(ev, pieceEl, piece){
+    if(!actx){ try{ ctx(); }catch(e){} }
+    const rect = pieceEl.getBoundingClientRect();
+    const cellSize = rect.width / shapeBounds(shapeCells(piece.key)).cols;
+    const grabDX = ev.clientX - rect.left;
+    const grabDY = ev.clientY - rect.top;
+    const liftY = 70; // lift ghost above finger so it's visible
+
+    pieceEl.classList.add("dragging");
+
+    const ghost = buildPieceEl(piece, cellSize);
+    ghost.classList.remove("piece");
+    ghost.classList.add("ghost-piece");
+    ghost.querySelectorAll(".piece-cell").forEach(c=> c.classList.add("ghost-cell"));
+    document.body.appendChild(ghost);
+
+    function positionGhost(x,y){
+      ghost.style.left = (x - grabDX) + "px";
+      ghost.style.top = (y - grabDY - liftY) + "px";
+    }
+    positionGhost(ev.clientX, ev.clientY);
+
+    const boardEl = el("board");
+
+    function computeAnchor(x,y){
+      const pitch = getCellPitch(boardEl);
+      const ghostRect = ghost.getBoundingClientRect();
+      const localX = ghostRect.left - pitch.originLeft;
+      const localY = ghostRect.top - pitch.originTop;
+      const anchorC = Math.round(localX / pitch.pitchX);
+      const anchorR = Math.round(localY / pitch.pitchY);
+      return { r: anchorR, c: anchorC };
+    }
+
+    function clearPreview(){
+      boardEl.querySelectorAll(".preview-ok,.preview-bad").forEach(c=> c.classList.remove("preview-ok","preview-bad"));
+    }
+
+    function showPreview(anchor){
+      clearPreview();
+      if(!game.cfg.assist) return;
+      const cells = shapeCells(piece.key);
+      const valid = canPlace(piece.key, anchor.r, anchor.c);
+      cells.forEach(([dr,dc])=>{
+        const r = anchor.r+dr, c = anchor.c+dc;
+        if(r>=0&&c>=0&&r<game.size&&c<game.size){
+          const idx = r*game.size+c;
+          boardEl.children[idx].classList.add(valid ? "preview-ok" : "preview-bad");
+        }
+      });
+    }
+
+    function onMove(mv){
+      positionGhost(mv.clientX, mv.clientY);
+      const anchor = computeAnchor(mv.clientX, mv.clientY);
+      showPreview(anchor);
+    }
+
+    function onUp(uv){
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      clearPreview();
+      const anchor = computeAnchor(uv.clientX, uv.clientY);
+      ghost.remove();
+      pieceEl.classList.remove("dragging");
+
+      if(canPlace(piece.key, anchor.r, anchor.c)){
+        placePiece(piece, anchor.r, anchor.c);
+      } else {
+        Sound.invalid();
+        render();
+      }
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  /* ---------------- Game over ---------------- */
+  function triggerGameOver(){
+    Sound.gameOver();
+    const hs = cachedHighScore;
+    el("gameOverTitle").textContent = game.score >= hs && game.score > 0 ? "¡Nuevo récord! 🏆" : "¡Juego terminado! 🎊";
+    el("gameOverText").textContent = `Puntaje: ${game.score}  ·  Mejor: ${hs}`;
+    el("gameOverModal").classList.remove("hidden");
+  }
+  el("restartBtn").addEventListener("click", ()=>{
+    Sound.click();
+    el("gameOverModal").classList.add("hidden");
+    newGame();
+  });
+
+  /* ============================================================
+     BOOT
+  ============================================================ */
+  window.addEventListener("resize", ()=>{ if(game){ buildBoardDOM(); render(); } });
+
+  async function boot(){
+    settings = await loadSettings();
+    cachedHighScore = await loadHighScore();
+    if(settings && settings.ageGroup && settings.pin){
+      beginGameScreen();
+    } else {
+      goToScreen("setupAge");
+    }
+  }
+  boot();
+
+})();
+</script>
+</body>
+</html>
