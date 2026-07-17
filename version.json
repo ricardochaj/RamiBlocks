@@ -1,4 +1,4 @@
 {
-  "version": "1.0.0",
-  "notes": "Primera version de RamiBlocks"
+  "version": "1.0.1",
+  "notes": "Bloques con brillo animado tipo gema, sonido al agarrar una pieza, y rebote en el puntaje"
 }
