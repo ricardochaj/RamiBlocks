@@ -28,8 +28,10 @@
   html,body{
     margin:0; padding:0; height:100%; overflow:hidden;
     background:
-      radial-gradient(circle at 20% 10%, #2a1d70 0%, transparent 45%),
-      radial-gradient(circle at 85% 85%, #1b2a63 0%, transparent 50%),
+      radial-gradient(circle at 15% 12%, rgba(255,47,208,.22) 0%, transparent 40%),
+      radial-gradient(circle at 88% 18%, rgba(0,195,255,.20) 0%, transparent 42%),
+      radial-gradient(circle at 25% 88%, rgba(255,225,10,.16) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(176,38,255,.22) 0%, transparent 46%),
       linear-gradient(180deg, var(--bg-deep), var(--bg-mid));
     color:var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Rounded", "Segoe UI", Verdana, Roboto, sans-serif;
@@ -39,7 +41,20 @@
   #app{ position:relative; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 
   /* ---------- Decorative floating shapes ---------- */
-  .bg-shape{ position:absolute; border-radius:10px; opacity:.10; filter:blur(1px); }
+  .bg-blob{
+    position:fixed; border-radius:50%; filter: blur(40px); opacity:.35;
+    pointer-events:none; z-index:0; animation: blobFloat 14s ease-in-out infinite;
+  }
+  @keyframes blobFloat{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(var(--drift-x,20px), var(--drift-y,-25px)) scale(1.08); }
+  }
+  .bg-star{
+    position:fixed; color:#fff; opacity:.5; pointer-events:none; z-index:0;
+    animation: starTwinkle 2.6s ease-in-out infinite;
+    font-size: 1.1rem;
+  }
+  @keyframes starTwinkle{ 0%,100%{ opacity:.2; transform: scale(.8) rotate(0deg); } 50%{ opacity:.85; transform: scale(1.15) rotate(15deg); } }
 
   /* ---------- Generic screen ---------- */
   .screen{
@@ -224,10 +239,28 @@
     transition: opacity .2s ease, transform .2s cubic-bezier(.34,1.56,.64,1); pointer-events:none;
   }
   .combo-toast.show{ opacity:1; transform: translateX(-50%) translateY(0) scale(1.08); }
+
+  .version-badge{
+    position: fixed; left: .5rem; bottom: calc(env(safe-area-inset-bottom) + .35rem);
+    font-size: .65rem; color: rgba(184,173,222,.45); letter-spacing:.02em;
+    pointer-events: none; z-index: 5; font-weight:600;
+  }
 </style>
 </head>
 <body>
 <div id="app">
+  <div class="bg-blob" style="width:22vmax; height:22vmax; left:-6vmax; top:-4vmax; background:var(--candy-pink); --drift-x:35px; --drift-y:20px; animation-duration:16s;"></div>
+  <div class="bg-blob" style="width:18vmax; height:18vmax; right:-5vmax; top:8vh; background:var(--candy-blue); --drift-x:-25px; --drift-y:30px; animation-duration:13s; animation-delay:-4s;"></div>
+  <div class="bg-blob" style="width:20vmax; height:20vmax; left:8vw; bottom:-6vmax; background:var(--candy-yellow); opacity:.22; --drift-x:20px; --drift-y:-30px; animation-duration:18s; animation-delay:-8s;"></div>
+  <div class="bg-blob" style="width:24vmax; height:24vmax; right:-8vmax; bottom:-8vmax; background:var(--candy-purple); --drift-x:-30px; --drift-y:-20px; animation-duration:15s; animation-delay:-2s;"></div>
+  <div class="bg-star" style="left:8%; top:14%; animation-delay:0s;">✦</div>
+  <div class="bg-star" style="left:90%; top:10%; animation-delay:-1s; font-size:.8rem;">✦</div>
+  <div class="bg-star" style="left:6%; top:78%; animation-delay:-1.8s; font-size:.9rem;">✦</div>
+  <div class="bg-star" style="left:93%; top:70%; animation-delay:-.6s;">✦</div>
+  <div class="bg-star" style="left:50%; top:6%; animation-delay:-2.4s; font-size:.7rem;">✦</div>
+  <div class="bg-star" style="left:15%; top:45%; animation-delay:-1.2s; font-size:.65rem;">✦</div>
+  <div class="bg-star" style="left:85%; top:45%; animation-delay:-2s; font-size:.75rem;">✦</div>
+  <div class="version-badge" id="versionBadge">v…</div>
 
   <!-- ===================== SETUP: STEP 1 - AGE ===================== -->
   <div id="setupAge" class="screen">
@@ -299,6 +332,10 @@
     <div class="modal-card">
       <h2>Configuración</h2>
       <div class="settings-row">
+        <span class="label">Versión instalada</span>
+        <span id="currentVersionLabel">-</span>
+      </div>
+      <div class="settings-row">
         <span class="label">Edad configurada</span>
         <span id="currentAgeLabel">-</span>
       </div>
@@ -340,6 +377,7 @@
   ============================================================ */
   const STORAGE_KEY = "bloqueFiestaSettings";
   const HS_KEY = "bloqueFiestaHighScore";
+  const BUNDLED_VERSION = "1.0.4"; // matches version.json — bump this together with it
 
   function nativePrefs(){
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -616,6 +654,10 @@
 
   function openSettingsPanel(){
     el("currentAgeLabel").textContent = AGE_CONFIG[settings.ageGroup].label;
+    el("currentVersionLabel").textContent = "…";
+    storageGet("rb_installed_version").then(function(v){
+      el("currentVersionLabel").textContent = v || (BUNDLED_VERSION + " (de fábrica)");
+    });
     el("settingsModal").classList.remove("hidden");
   }
   el("closeSettingsBtn").addEventListener("click", ()=>{
@@ -1052,6 +1094,9 @@
   async function boot(){
     settings = await loadSettings();
     cachedHighScore = await loadHighScore();
+    storageGet("rb_installed_version").then(function(v){
+      el("versionBadge").textContent = "v" + (v || BUNDLED_VERSION);
+    });
     if(settings && settings.ageGroup && settings.pin){
       beginGameScreen();
     } else {
