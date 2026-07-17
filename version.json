@@ -1,4 +1,4 @@
 {
-  "version": "1.0.5",
-  "notes": "Boton de salir, explosiones mas grandes con destello de pantalla, y arreglo de alineacion en piezas grandes"
+  "version": "1.0.6",
+  "notes": "Arreglo importante: el juego ya no termina por error justo despues de completar lineas o lograr un record. Records ahora festejan sin interrumpir el juego. Mas variedad de piezas por edad. Indicador de Nivel."
 }

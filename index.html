@@ -126,6 +126,7 @@
   .score-box{ background: var(--panel); border-radius: .9rem; padding: .5rem 1rem; box-shadow: inset 0 0 0 2px var(--panel-edge); text-align:left; }
   .score-box .label{ font-size:.65rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; }
   .score-box .value{ font-size:1.35rem; font-weight:800; color: var(--gold); line-height:1.1; }
+  .score-box .level-tag{ font-size:.62rem; color: var(--ink-dim); margin-top:.1rem; font-weight:700; }
   .score-box .value.pop{ animation: scorePop .35s cubic-bezier(.34,1.56,.64,1); }
   @keyframes scorePop{ 0%{ transform: scale(1); } 50%{ transform: scale(1.35); color:#fff; } 100%{ transform: scale(1); } }
   .icon-btn{
@@ -310,6 +311,7 @@
       <div class="score-box">
         <div class="label">Puntos</div>
         <div class="value" id="scoreValue">0</div>
+        <div class="level-tag" id="levelTag">Nivel 1</div>
       </div>
       <div class="score-box">
         <div class="label">Mejor puntaje</div>
@@ -399,7 +401,7 @@
   ============================================================ */
   const STORAGE_KEY = "bloqueFiestaSettings";
   const HS_KEY = "bloqueFiestaHighScore";
-  const BUNDLED_VERSION = "1.0.5"; // matches version.json — bump this together with it
+  const BUNDLED_VERSION = "1.0.6"; // matches version.json — bump this together with it
 
   function nativePrefs(){
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -489,13 +491,21 @@
     v5: [[0,0],[1,0],[2,0],[3,0],[4,0]],
     plus: [[0,1],[1,0],[1,1],[1,2],[2,1]],
     sq3: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]],
-    zigBig: [[0,0],[1,0],[1,1],[2,1],[2,2]]
+    zigBig: [[0,0],[1,0],[1,1],[2,1],[2,2]],
+    tShapeB: [[0,1],[1,0],[1,1],[2,1]],
+    tShapeC: [[0,0],[1,0],[1,1],[2,0]],
+    sShape2: [[0,0],[1,0],[1,1],[2,1]],
+    zShape2: [[0,1],[1,0],[1,1],[2,0]],
+    pShape: [[0,0],[0,1],[1,0],[1,1],[2,0]],
+    uShape: [[0,0],[0,2],[1,0],[1,1],[1,2]],
+    lPenta: [[0,0],[1,0],[2,0],[3,0],[3,1]],
+    cornerBig: [[0,0],[0,1],[0,2],[1,0],[2,0]]
   };
 
   const SET_EASY = ["dot","h2","v2","sq2","h3","v3","lSmallA","lSmallB","lSmallC","lSmallD"];
-  const SET_MEDIUM = SET_EASY.concat(["h4","v4","lBigA","lBigB","tShape"]);
-  const SET_MED_HARD = SET_MEDIUM.concat(["lBigC","lBigD","sShape","zShape"]);
-  const SET_HARD = SET_MED_HARD.concat(["h5","v5","plus","sq3","zigBig"]);
+  const SET_MEDIUM = SET_EASY.concat(["h4","v4","lBigA","lBigB","tShape","tShapeB","tShapeC"]);
+  const SET_MED_HARD = SET_MEDIUM.concat(["lBigC","lBigD","sShape","zShape","sShape2","zShape2"]);
+  const SET_HARD = SET_MED_HARD.concat(["h5","v5","plus","sq3","zigBig","pShape","uShape","lPenta","cornerBig"]);
 
   const PALETTE = ["#ff2d55","#ff8a00","#ffe600","#00e676","#00b0ff","#c04dff","#ff3fd8","#00ffd5"];
 
@@ -741,13 +751,25 @@
       size: cfg.grid,
       grid: Array.from({length: cfg.grid}, ()=> Array(cfg.grid).fill(null)),
       score: 0,
+      level: 1,
       tray: []
     };
     el("scoreValue").textContent = "0";
     el("highScoreValue").textContent = String(cachedHighScore);
+    el("levelTag").textContent = "Nivel 1";
     buildBoardDOM();
     fillTray();
     render();
+  }
+
+  function levelForScore(score){ return 1 + Math.floor(score / 300); }
+  function updateLevelDisplay(){
+    const newLevel = levelForScore(game.score);
+    if(newLevel !== game.level){
+      game.level = newLevel;
+      Sound.click();
+    }
+    el("levelTag").textContent = "Nivel " + game.level;
   }
 
   function sizeBoard(){
@@ -830,10 +852,9 @@
     game.score += cells.length * 2;
     Sound.place();
 
-    const cleared = clearLines();
-    game.tray = game.tray.filter(p => p.id !== piece.id);
-    if(game.tray.length === 0) fillTray();
-
+    // Render the placed piece FIRST, before clearLines() marks any cells with
+    // the "clearing" animation class — otherwise this render() would strip
+    // that class the instant it's added.
     render();
     const boardEl = el("board");
     cells.forEach(([dr,dc])=>{
@@ -842,12 +863,21 @@
       const cellEl = boardEl.children[idx];
       if(cellEl){ cellEl.classList.remove("just-placed"); void cellEl.offsetWidth; cellEl.classList.add("just-placed"); }
     });
+
+    clearLines();
+    game.tray = game.tray.filter(p => p.id !== piece.id);
+    if(game.tray.length === 0) fillTray();
+    renderTray();
+
     const scoreEl = el("scoreValue");
     scoreEl.textContent = String(game.score);
     scoreEl.classList.remove("pop"); void scoreEl.offsetWidth; scoreEl.classList.add("pop");
+    updateLevelDisplay();
 
-    if(cleared > 0){
-      if(game.score > cachedHighScore){ saveHighScore(game.score); el("highScoreValue").textContent = String(game.score); }
+    if(game.score > cachedHighScore){
+      saveHighScore(game.score);
+      el("highScoreValue").textContent = String(game.score);
+      triggerRecordCelebration();
     }
 
     if(!anyPieceFits(game.tray)){
@@ -878,11 +908,13 @@
       }
     });
 
-    setTimeout(()=>{
-      fullRows.forEach(r=>{ for(let c=0;c<size;c++) game.grid[r][c] = null; });
-      fullCols.forEach(c=>{ for(let r=0;r<size;r++) game.grid[r][c] = null; });
-      render();
-    }, 260);
+    // Clear the underlying data RIGHT NOW so every other piece of logic that
+    // reads game.grid (game-over checks, generating the next tray, etc.) is
+    // always accurate — only the visual cleanup below waits for the animation.
+    fullRows.forEach(r=>{ for(let c=0;c<size;c++) game.grid[r][c] = null; });
+    fullCols.forEach(c=>{ for(let r=0;r<size;r++) game.grid[r][c] = null; });
+
+    setTimeout(()=>{ render(); }, 280);
 
     const bonus = totalLines * 50 * totalLines;
     game.score += bonus;
@@ -948,6 +980,24 @@
     toast.textContent = lines >= 2 ? `¡Súper combo x${lines}! 🌟` : "¡Línea completa! ✨";
     toast.classList.add("show");
     setTimeout(()=> toast.classList.remove("show"), 900);
+  }
+
+  function triggerRecordCelebration(){
+    Sound.win();
+    const flash = el("screenFlash");
+    flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
+    const toast = el("comboToast");
+    const showRecordToast = ()=>{
+      toast.textContent = "¡Nuevo récord! 🏆";
+      toast.classList.add("show");
+      setTimeout(()=> toast.classList.remove("show"), 1200);
+    };
+    // If a line-clear toast is showing right now, let it finish first so messages don't overlap.
+    if(toast.classList.contains("show")){
+      setTimeout(showRecordToast, 950);
+    } else {
+      showRecordToast();
+    }
   }
 
   function render(){
