@@ -283,6 +283,11 @@
     transform: scale(1.08); z-index:2;
   }
   .candy-cell.matched{ animation: pop .3s ease forwards; }
+  .candy-cell.hint{ animation: hintPulse 1.1s ease-in-out infinite; z-index:1; }
+  @keyframes hintPulse{
+    0%,100%{ box-shadow: 0 0 0 3px rgba(255,225,10,.9), 0 0 14px 3px rgba(255,225,10,.55); }
+    50%{ box-shadow: 0 0 0 5px rgba(255,225,10,.55), 0 0 22px 8px rgba(255,225,10,.3); }
+  }
 </style>
 </head>
 <body>
@@ -387,6 +392,7 @@
       </div>
       <div class="topbar-icons">
         <button class="icon-btn" id="blocksSwitchBtn" title="Bloques">🧩</button>
+        <button class="icon-btn" id="candyHintBtn" title="Ayuda">💡</button>
         <button class="icon-btn" id="candyExitBtn" title="Salir">🚪</button>
       </div>
     </div>
@@ -499,7 +505,7 @@
   ============================================================ */
   const STORAGE_KEY = "bloqueFiestaSettings";
   const HS_KEY = "bloqueFiestaHighScore";
-  const BUNDLED_VERSION = "1.0.9"; // matches version.json — bump this together with it
+  const BUNDLED_VERSION = "1.0.10"; // matches version.json — bump this together with it
 
   function nativePrefs(){
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -1412,6 +1418,9 @@
   let cachedCandyHighScore = 0;
   let candyGame = null;
   let candyBusy = false;
+  let candyHintTimer = null;
+  let candyHintCells = null;
+  const CANDY_HINT_DELAY_MS = 5000;
 
   function delay(ms){ return new Promise(resolve=> setTimeout(resolve, ms)); }
   function randCandyType(numColors){ return Math.floor(Math.random()*numColors); }
@@ -1442,7 +1451,7 @@
     return matched;
   }
 
-  function candyHasValidMove(grid){
+  function findCandyHintMove(grid){
     const size = grid.length;
     for(let r=0;r<size;r++){
       for(let c=0;c<size;c++){
@@ -1450,17 +1459,21 @@
           swapCandy(grid,r,c,r,c+1);
           const has = findCandyMatches(grid).size > 0;
           swapCandy(grid,r,c,r,c+1);
-          if(has) return true;
+          if(has) return {r1:r,c1:c,r2:r,c2:c+1};
         }
         if(r+1<size){
           swapCandy(grid,r,c,r+1,c);
           const has = findCandyMatches(grid).size > 0;
           swapCandy(grid,r,c,r+1,c);
-          if(has) return true;
+          if(has) return {r1:r,c1:c,r2:r+1,c2:c};
         }
       }
     }
-    return false;
+    return null;
+  }
+
+  function candyHasValidMove(grid){
+    return findCandyHintMove(grid) !== null;
   }
 
   function buildCandyGridData(size, numColors){
@@ -1549,8 +1562,36 @@
     setTimeout(()=> toast.classList.remove("show"), 900);
   }
 
+  function clearCandyHint(){
+    if(candyHintTimer){ clearTimeout(candyHintTimer); candyHintTimer = null; }
+    if(candyHintCells){
+      const boardEl = el("candyBoard");
+      [[candyHintCells.r1,candyHintCells.c1],[candyHintCells.r2,candyHintCells.c2]].forEach(([r,c])=>{
+        const cellEl = boardEl.children[r*candyGame.size+c];
+        if(cellEl) cellEl.classList.remove("hint");
+      });
+      candyHintCells = null;
+    }
+  }
+
+  function scheduleCandyHint(delayMs){
+    if(candyHintTimer) clearTimeout(candyHintTimer);
+    candyHintTimer = setTimeout(()=>{
+      if(candyBusy || !candyGame) return;
+      const move = findCandyHintMove(candyGame.grid);
+      if(!move) return;
+      candyHintCells = move;
+      const boardEl = el("candyBoard");
+      const c1 = boardEl.children[move.r1*candyGame.size+move.c1];
+      const c2 = boardEl.children[move.r2*candyGame.size+move.c2];
+      if(c1) c1.classList.add("hint");
+      if(c2) c2.classList.add("hint");
+    }, delayMs == null ? CANDY_HINT_DELAY_MS : delayMs);
+  }
+
   async function onCandyCellTap(ev){
     if(candyBusy) return;
+    clearCandyHint();
     const r = parseInt(ev.currentTarget.dataset.r, 10);
     const c = parseInt(ev.currentTarget.dataset.c, 10);
     const sel = candyGame.selected;
@@ -1559,11 +1600,13 @@
       candyGame.selected = {r,c};
       Sound.pickup();
       renderCandyBoard();
+      scheduleCandyHint();
       return;
     }
     if(sel.r===r && sel.c===c){
       candyGame.selected = null;
       renderCandyBoard();
+      scheduleCandyHint();
       return;
     }
     const adjacent = (Math.abs(sel.r-r) + Math.abs(sel.c-c)) === 1;
@@ -1571,6 +1614,7 @@
       candyGame.selected = {r,c};
       Sound.click();
       renderCandyBoard();
+      scheduleCandyHint();
       return;
     }
 
@@ -1586,11 +1630,13 @@
       renderCandyBoard();
       await delay(140);
       candyBusy = false;
+      scheduleCandyHint();
       return;
     }
 
     await resolveCandyCascades();
     candyBusy = false;
+    scheduleCandyHint();
   }
 
   async function resolveCandyCascades(){
@@ -1657,6 +1703,7 @@
     el("candyHighScoreValue").textContent = String(cachedCandyHighScore);
     buildCandyBoardDOM();
     renderCandyBoard();
+    scheduleCandyHint();
   }
 
   function showCandyScreen(){
@@ -1672,8 +1719,15 @@
   });
   el("blocksSwitchBtn").addEventListener("click", ()=>{
     Sound.click();
+    clearCandyHint();
     el("candyScreen").classList.remove("active");
     beginGameScreen();
+  });
+  el("candyHintBtn").addEventListener("click", ()=>{
+    Sound.click();
+    if(candyBusy) return;
+    clearCandyHint();
+    scheduleCandyHint(0);
   });
   el("candyExitBtn").addEventListener("click", ()=>{
     Sound.click();

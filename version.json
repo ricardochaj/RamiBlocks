@@ -1,4 +1,4 @@
 {
-  "version": "1.0.9",
-  "notes": "Caramelos ahora tienen formas distintas (circulo, cuadrado, diamante, hexagono, ovalo, estrella) ademas de color, para que sea mas facil de reconocer para un nene"
+  "version": "1.0.10",
+  "notes": "Caramelos: pista automatica (brillo suave en dos caramelos que combinan) tras unos segundos sin jugar, y boton de ayuda manual, para que sea mas facil de interpretar y no genere frustracion"
 }
