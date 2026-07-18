@@ -1,4 +1,4 @@
 {
-  "version": "1.0.8",
-  "notes": "Nuevo sub-juego: Caramelos (match-3), con el boton 🍬 desde la pantalla de bloques"
+  "version": "1.0.9",
+  "notes": "Caramelos ahora tienen formas distintas (circulo, cuadrado, diamante, hexagono, ovalo, estrella) ademas de color, para que sea mas facil de reconocer para un nene"
 }

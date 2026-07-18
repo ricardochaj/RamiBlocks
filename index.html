@@ -499,7 +499,7 @@
   ============================================================ */
   const STORAGE_KEY = "bloqueFiestaSettings";
   const HS_KEY = "bloqueFiestaHighScore";
-  const BUNDLED_VERSION = "1.0.8"; // matches version.json — bump this together with it
+  const BUNDLED_VERSION = "1.0.9"; // matches version.json — bump this together with it
 
   function nativePrefs(){
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -1523,6 +1523,7 @@
         const type = candyGame.grid[r][c];
         cellEl.classList.add("filled");
         cellEl.style.background = glossyGradient(CANDY_COLOR_LIST[type % CANDY_COLOR_LIST.length]);
+        cellEl.style.clipPath = CANDY_SHAPES[type % CANDY_SHAPES.length];
         cellEl.style.setProperty("--shine-delay", (-(Math.random()*3.4)).toFixed(2)+"s");
         cellEl.classList.toggle("selected", !!(candyGame.selected && candyGame.selected.r===r && candyGame.selected.c===c));
       }
@@ -1530,6 +1531,16 @@
   }
 
   const CANDY_COLOR_LIST = PALETTE;
+  // Each candy TYPE always pairs the same color with the same shape, so kids
+  // can match by silhouette alone, not just color (helps colorblind kids too).
+  const CANDY_SHAPES = [
+    "circle(44% at 50% 50%)",                                                  // redondo
+    "inset(14% 14% 14% 14% round 20%)",                                        // cuadrado
+    "polygon(50% 4%, 96% 50%, 50% 96%, 4% 50%)",                               // diamante
+    "polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%)",             // hexágono
+    "ellipse(42% 30% at 50% 50%)",                                             // óvalo
+    "polygon(50% 2%, 61% 37%, 97% 37%, 68% 59%, 79% 94%, 50% 73%, 21% 94%, 32% 59%, 3% 37%, 39% 37%)" // estrella
+  ];
 
   function showCandyCombo(combo){
     const toast = el("candyComboToast");
