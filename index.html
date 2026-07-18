@@ -283,10 +283,17 @@
     transform: scale(1.08); z-index:2;
   }
   .candy-cell.matched{ animation: pop .3s ease forwards; }
-  .candy-cell.hint{ animation: hintPulse 1.1s ease-in-out infinite; z-index:1; }
+  .candy-cell.hint{
+    animation: hintPulse 1.1s ease-in-out infinite, hintNudge 1.1s ease-in-out infinite;
+    z-index:1;
+  }
   @keyframes hintPulse{
     0%,100%{ box-shadow: 0 0 0 3px rgba(255,225,10,.9), 0 0 14px 3px rgba(255,225,10,.55); }
     50%{ box-shadow: 0 0 0 5px rgba(255,225,10,.55), 0 0 22px 8px rgba(255,225,10,.3); }
+  }
+  @keyframes hintNudge{
+    0%, 100%{ transform: translate(0,0); }
+    50%{ transform: translate(var(--nudge-x, 0), var(--nudge-y, 0)); }
   }
 </style>
 </head>
@@ -505,7 +512,7 @@
   ============================================================ */
   const STORAGE_KEY = "bloqueFiestaSettings";
   const HS_KEY = "bloqueFiestaHighScore";
-  const BUNDLED_VERSION = "1.0.10"; // matches version.json — bump this together with it
+  const BUNDLED_VERSION = "1.0.11"; // matches version.json — bump this together with it
 
   function nativePrefs(){
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -1584,8 +1591,19 @@
       const boardEl = el("candyBoard");
       const c1 = boardEl.children[move.r1*candyGame.size+move.c1];
       const c2 = boardEl.children[move.r2*candyGame.size+move.c2];
-      if(c1) c1.classList.add("hint");
-      if(c2) c2.classList.add("hint");
+      const dirX = move.c2 - move.c1; // -1, 0 or 1
+      const dirY = move.r2 - move.r1;
+      const nudge = 30; // % of the cell's own size
+      if(c1){
+        c1.style.setProperty("--nudge-x", (dirX*nudge)+"%");
+        c1.style.setProperty("--nudge-y", (dirY*nudge)+"%");
+        c1.classList.add("hint");
+      }
+      if(c2){
+        c2.style.setProperty("--nudge-x", (-dirX*nudge)+"%");
+        c2.style.setProperty("--nudge-y", (-dirY*nudge)+"%");
+        c2.classList.add("hint");
+      }
     }, delayMs == null ? CANDY_HINT_DELAY_MS : delayMs);
   }
 

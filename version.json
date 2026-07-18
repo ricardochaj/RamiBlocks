@@ -1,4 +1,4 @@
 {
-  "version": "1.0.10",
-  "notes": "Caramelos: pista automatica (brillo suave en dos caramelos que combinan) tras unos segundos sin jugar, y boton de ayuda manual, para que sea mas facil de interpretar y no genere frustracion"
+  "version": "1.0.11",
+  "notes": "La pista de Caramelos ahora muestra el movimiento en si: los dos caramelos se empujan uno hacia el otro y vuelven, en loop, para demostrar el intercambio de forma mas clara e intuitiva"
 }
